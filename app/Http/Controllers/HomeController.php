@@ -17,6 +17,15 @@ class HomeController extends Controller
      */
     public function __invoke(): Response
     {
+        $banners = \App\Models\Banner::currentlyLive()->orderBy('sort_order')->get()->map(fn ($b) => [
+    'id' => $b->id,
+    'eyebrow' => $b->eyebrow,
+    'title' => $b->title,
+    'subtitle' => $b->subtitle,
+    'image' => asset('storage/'.$b->image),
+    'ctaLabel' => $b->cta_label,
+    'ctaHref' => $b->cta_href,
+]);
         $categories = Category::query()
             ->whereNull('parent_id')
             ->where('status', 'active')

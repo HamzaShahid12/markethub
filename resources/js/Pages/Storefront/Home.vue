@@ -6,6 +6,7 @@ import StorefrontLayout from '@/Layouts/StorefrontLayout.vue';
 import ProductCard from '@/Components/Product/ProductCard.vue';
 import { useCartStore } from '@/Stores/cart';
 import { useToast } from '@/Composables/useToast';
+import HeroSlider from '@/Components/Storefront/HeroSlider.vue';
 
 defineOptions({ layout: StorefrontLayout });
 
@@ -15,6 +16,7 @@ const props = defineProps({
     flashDeals: { type: Array, default: () => [] },
     flashDealsEndAt: { type: String, default: null },
     vendors: { type: Array, default: () => [] },
+    banners: { type: Array, default: () => [] },
 });
 
 const page = usePage();
@@ -67,47 +69,7 @@ const trustPoints = [
     <Head title="Home" />
 
     <!-- Hero -->
-    <section class="border-b border-ink-100 bg-ink-900">
-        <div class="container-page grid items-center gap-10 py-16 lg:grid-cols-2 lg:py-24">
-            <div>
-                <p class="text-sm font-medium uppercase tracking-widest text-accent-400">The marketplace, done right</p>
-                <h1 class="mt-4 font-display text-4xl font-extrabold leading-tight text-white sm:text-5xl">
-                    Independent vendors. <br class="hidden sm:block" />One trusted checkout.
-                </h1>
-                <p class="mt-5 max-w-lg text-ink-300">
-                    Browse thousands of products from vetted vendors, track every order in real time, and get
-                    help straight from the people who make what you buy.
-                </p>
-                <div class="mt-8 flex flex-wrap gap-3">
-                    <Link
-                        href="/products"
-                        class="inline-flex items-center gap-2 rounded-lg bg-accent-500 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent-600"
-                    >
-                        Start shopping <ArrowRight class="h-4 w-4" />
-                    </Link>
-                    <Link
-                        href="/vendor/register"
-                        class="inline-flex items-center gap-2 rounded-lg border border-ink-700 px-6 py-3 text-sm font-semibold text-white hover:bg-ink-800"
-                    >
-                        Sell on MarketHub
-                    </Link>
-                </div>
-                <dl class="mt-10 flex flex-wrap gap-x-8 gap-y-4">
-                    <div v-for="point in trustPoints" :key="point.label" class="flex items-center gap-2 text-sm text-ink-300">
-                        <component :is="point.icon" class="h-4 w-4 text-accent-400" />
-                        {{ point.label }}
-                    </div>
-                </dl>
-            </div>
-
-            <div class="relative hidden lg:block">
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="aspect-[3/4] translate-y-6 rounded-xl bg-ink-800" />
-                    <div class="aspect-[3/4] rounded-xl bg-ink-700" />
-                </div>
-            </div>
-        </div>
-    </section>
+   <HeroSlider v-if="banners.length" :slides="banners" />
 
     <!-- Categories -->
     <section class="container-page py-14">
