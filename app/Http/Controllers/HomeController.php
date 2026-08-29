@@ -58,19 +58,20 @@ class HomeController extends Controller
     }
 
     private function transformProduct(Product $product): array
-    {
-        return [
-            'id' => $product->id,
-            'slug' => $product->slug,
-            'name' => $product->name,
-            'price' => $product->price,
-            'sale_price' => $product->sale_price,
-            'rating_average' => $product->rating_average,
-            'rating_count' => $product->rating_count,
-            'vendor_name' => $product->vendor?->shop_name,
-            'image' => $product->images->first()?->image
-                ? asset('storage/'.$product->images->first()->image)
-                : null,
-        ];
-    }
+{
+    $images = $product->images;
+
+    return [
+        'id' => $product->id,
+        'slug' => $product->slug,
+        'name' => $product->name,
+        'price' => $product->price,
+        'sale_price' => $product->sale_price,
+        'rating_average' => $product->rating_average,
+        'rating_count' => $product->rating_count,
+        'vendor_name' => $product->vendor?->shop_name,
+        'image' => $images->first()?->image ? asset('storage/'.$images->first()->image) : null,
+        'secondary_image' => $images->skip(1)->first()?->image ? asset('storage/'.$images->skip(1)->first()->image) : null,
+    ];
+}
 }

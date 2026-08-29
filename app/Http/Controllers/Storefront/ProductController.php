@@ -68,6 +68,7 @@ class ProductController extends Controller
                 'rating_count' => $p->rating_count,
                 'vendor_name' => $p->vendor?->shop_name,
                 'image' => $p->images->first()?->image ? asset('storage/'.$p->images->first()->image) : null,
+                'secondary_image' => $p->images->skip(1)->first()?->image ? asset('storage/'.$p->images->skip(1)->first()->image) : null,
             ]);
 
         return [
