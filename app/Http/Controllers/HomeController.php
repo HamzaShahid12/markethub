@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Banner;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Vendor;
@@ -11,21 +12,21 @@ use Inertia\Response;
 
 class HomeController extends Controller
 {
-    /**
-     * Storefront home page (section 3.1: hero, categories, trending,
-     * flash deals, vendors, newsletter).
-     */
     public function __invoke(): Response
     {
-        $banners = \App\Models\Banner::currentlyLive()->orderBy('sort_order')->get()->map(fn ($b) => [
-    'id' => $b->id,
-    'eyebrow' => $b->eyebrow,
-    'title' => $b->title,
-    'subtitle' => $b->subtitle,
-    'image' => asset('storage/'.$b->image),
-    'ctaLabel' => $b->cta_label,
-    'ctaHref' => $b->cta_href,
-]);
+        $banners = Banner::currentlyLive()
+            ->orderBy('sort_order')
+            ->get()
+            ->map(fn (Banner $b) => [
+                'id' => $b->id,
+                'eyebrow' => $b->eyebrow,
+                'title' => $b->title,
+                'subtitle' => $b->subtitle,
+                'image' => asset('storage/'.$b->image),
+                'ctaLabel' => $b->cta_label,
+                'ctaHref' => $b->cta_href,
+            ]);
+
         $categories = Category::query()
             ->whereNull('parent_id')
             ->where('status', 'active')
@@ -58,6 +59,7 @@ class HomeController extends Controller
             ->get(['id', 'shop_name', 'slug']);
 
         return Inertia::render('Storefront/Home', [
+            'banners' => $banners,
             'categories' => $categories,
             'trending' => $trending,
             'flashDeals' => $flashDeals,
@@ -67,20 +69,20 @@ class HomeController extends Controller
     }
 
     private function transformProduct(Product $product): array
-{
-    $images = $product->images;
+    {
+        $images = $product->images;
 
-    return [
-        'id' => $product->id,
-        'slug' => $product->slug,
-        'name' => $product->name,
-        'price' => $product->price,
-        'sale_price' => $product->sale_price,
-        'rating_average' => $product->rating_average,
-        'rating_count' => $product->rating_count,
-        'vendor_name' => $product->vendor?->shop_name,
-        'image' => $images->first()?->image ? asset('storage/'.$images->first()->image) : null,
-        'secondary_image' => $images->skip(1)->first()?->image ? asset('storage/'.$images->skip(1)->first()->image) : null,
-    ];
-}
+        return [
+            'id' => $product->id,
+            'slug' => $product->slug,
+            'name' => $product->name,
+            'price' => $product->price,
+            'sale_price' => $product->sale_price,
+            'rating_average' => $product->rating_average,
+            'rating_count' => $product->rating_count,
+            'vendor_name' => $product->vendor?->shop_name,
+            'image' => $images->first()?->image ? asset('storage/'.$images->first()->image) : null,
+            'secondary_image' => $images->skip(1)->first()?->image ? asset('storage/'.$images->skip(1)->first()->image) : null,
+        ];
+    }
 }
