@@ -123,6 +123,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/orders', [CustomerOrderController::class, 'index'])->name('orders.index');
         Route::get('/orders/{order}', [CustomerOrderController::class, 'show'])->name('orders.show');
         Route::post('/orders/{order}/cancel', [CustomerOrderController::class, 'cancel'])->name('orders.cancel');
+        Route::get('/reviews', [CustomerReviewController::class, 'index'])->name('reviews.index');
         Route::post('/reviews', [CustomerReviewController::class, 'store'])->name('reviews.store');
 
         Route::get('/messages', [CustomerConversationController::class, 'index'])->name('messages.index');

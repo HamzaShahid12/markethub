@@ -97,22 +97,28 @@ class OrderController extends Controller
      * as any vendor starts processing their part.
      */
     private function syncOrderStatus(Order $order): void
-    {
-        $previousStatus = $order->status;
-        $statuses = $order->items()->pluck('status');
+{
+    $previousStatus = $order->status;
+    $statuses = $order->items()->pluck('status');
 
-        $nextStatus = match (true) {
-            $statuses->every(fn ($s) => $s === 'delivered') => 'delivered',
-            $statuses->every(fn ($s) => in_array($s, ['delivered', 'cancelled'], true)) => 'delivered',
-            $statuses->contains('shipped') => 'shipped',
-            $statuses->contains('processing') => 'processing',
-            default => $order->status,
-        };
+    $nextStatus = match (true) {
+        $statuses->every(fn ($s) => $s === 'delivered') => 'delivered',
+        $statuses->every(fn ($s) => in_array($s, ['delivered', 'cancelled'], true)) => 'delivered',
+        $statuses->contains('shipped') => 'shipped',
+        $statuses->contains('processing') => 'processing',
+        default => $order->status,
+    };
 
-        $order->update(['status' => $nextStatus]);
+    $order->update(['status' => $nextStatus]);
 
-        if ($nextStatus !== $previousStatus) {
-            \App\Events\OrderStatusChanged::dispatch($order, $previousStatus);
-        }
+    // Once the order is fully delivered, its commissions become
+    // payable — the vendor is now actually owed this money.
+    if ($nextStatus === 'delivered') {
+        $order->commissions()->where('status', 'pending')->update(['status' => 'payable']);
     }
+
+    if ($nextStatus !== $previousStatus) {
+        \App\Events\OrderStatusChanged::dispatch($order, $previousStatus);
+    }
+}
 }

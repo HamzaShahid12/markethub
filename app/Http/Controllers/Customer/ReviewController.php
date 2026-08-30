@@ -6,18 +6,33 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Customer\ReviewRequest;
 use App\Models\Product;
 use App\Models\Review;
+use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Inertia\Inertia;
+use Inertia\Response;
 
-/**
- * "A customer can review a product only after purchasing it" (section
- * 6.3) — enforced by ReviewPolicy::create (Phase 1), which checks for
- * a delivered order containing this product and blocks a second
- * review of the same product/order pair. New reviews land as
- * `pending` and go through the admin moderation queue from Phase 7
- * before they affect the product's public rating.
- */
 class ReviewController extends Controller
 {
+    public function index(Request $request): Response
+    {
+        $reviews = $request->user()->reviews()
+            ->with('product:id,name,slug')
+            ->latest()
+            ->paginate(10);
+
+        return Inertia::render('Customer/Reviews/Index', [
+            'reviews' => $reviews->through(fn (Review $r) => [
+                'id' => $r->id,
+                'rating' => $r->rating,
+                'comment' => $r->comment,
+                'status' => $r->status,
+                'product_name' => $r->product?->name,
+                'product_slug' => $r->product?->slug,
+                'created_at' => $r->created_at->toDateString(),
+            ]),
+        ]);
+    }
+
     public function store(ReviewRequest $request): RedirectResponse
     {
         $data = $request->validated();
