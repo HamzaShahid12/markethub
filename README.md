@@ -27,21 +27,35 @@ on a live URL, then link it here._
 
 ## Screenshots
 
-_Placeholder — recommended shot list for a polished README (8–12
-images, per spec section 22):_
+### Home Page
+![Home Page](docs/screenshots/home.png)
 
-1. Home page (hero + flash deals)
-2. Product listing with filters open
-3. Product details page (variant selector + reviews)
-4. Cart and checkout
-5. Customer dashboard + order tracking with the status timeline
-6. Vendor dashboard (approved state, with sales chart)
-7. Vendor product form (image upload + variant builder)
-8. Admin dashboard
-9. Admin vendor approval queue
-10. Live chat thread between a customer and vendor
-11. Notification bell with the unread badge
-12. Mobile view of the storefront
+<table>
+  <tr>
+    <td><img src="docs/screenshots/product-listing.png" width="400"/></td>
+    <td><img src="docs/screenshots/product-page.png" width="400"/></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Product Listing</b></td>
+    <td align="center"><b>Product Page</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/customer-dashboard.png" width="400"/></td>
+    <td><img src="docs/screenshots/vendor-dashboard.png" width="400"/></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Customer Dashboard</b></td>
+    <td align="center"><b>Vendor Dashboard</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/admin-dashboard.png" width="400"/></td>
+    <td><img src="docs/screenshots/admin-banners.png" width="400"/></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Admin Dashboard</b></td>
+    <td align="center"><b>Banner Management</b></td>
+  </tr>
+</table>
 
 ## Features
 
