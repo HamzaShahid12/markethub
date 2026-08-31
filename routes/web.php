@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\VendorController as AdminVendorController;
 use App\Http\Controllers\Admin\BannerController;
+use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Api\CartController as ApiCartController;
 use App\Http\Controllers\Api\CouponController as ApiCouponController;
 use App\Http\Controllers\Api\NotificationController as ApiNotificationController;
@@ -198,7 +199,8 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/commissions', [AdminCommissionController::class, 'index'])->name('commissions.index');
         Route::get('/reports', [AdminReportController::class, 'index'])->name('reports.index');
-        // Route::get('/settings', [Admin\SettingController::class, 'edit'])->name('settings.edit');
+        Route::get('/settings', [SettingController::class, 'edit'])->name('settings.edit');
+        Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
     });
 });
 require __DIR__.'/auth.php';

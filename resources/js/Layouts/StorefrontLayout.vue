@@ -211,7 +211,7 @@ const navLinks = [
                 </div>
             </div>
             <div class="border-t border-ink-100 py-6 text-center text-xs text-ink-400">
-                © {{ new Date().getFullYear() }} MarketHub. Built as a portfolio project.
+                © {{ new Date().getFullYear() }} MarketHub. Developed by NexMind Innovations.
             </div>
         </footer>
 

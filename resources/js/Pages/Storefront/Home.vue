@@ -17,6 +17,7 @@ const props = defineProps({
     flashDealsEndAt: { type: String, default: null },
     vendors: { type: Array, default: () => [] },
     banners: { type: Array, default: () => [] },
+    categoryDisplayStyle: { type: String, default: 'circle' },
 });
 
 const page = usePage();
@@ -72,25 +73,63 @@ const trustPoints = [
    <HeroSlider v-if="banners.length" :slides="banners" />
 
     <!-- Categories -->
-    <section class="container-page py-14">
-        <div class="mb-6 flex items-end justify-between">
-            <h2 class="font-display text-2xl font-bold text-ink-900">Shop by category</h2>
-            <Link href="/categories" class="text-sm font-medium text-accent-600 hover:text-accent-700">View all</Link>
-        </div>
-        <div class="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8">
-            <Link
-                v-for="category in categories"
-                :key="category.id"
-                :href="`/categories/${category.slug}`"
-                class="group flex flex-col items-center gap-2 rounded-xl border border-ink-100 bg-white p-4 text-center transition-colors hover:border-accent-300 hover:bg-accent-50"
-            >
-                <span class="flex h-12 w-12 items-center justify-center rounded-full bg-ink-50 text-lg font-semibold text-ink-500 group-hover:bg-accent-100 group-hover:text-accent-700">
-                    {{ category.name.charAt(0) }}
-                </span>
-                <span class="text-xs font-medium text-ink-700">{{ category.name }}</span>
-            </Link>
-        </div>
-    </section>
+<section class="container-page py-14">
+    <div class="mb-8 flex items-end justify-between">
+        <h2 class="font-display text-2xl font-bold text-ink-900">Shop by category</h2>
+        <Link href="/categories" class="text-sm font-medium text-accent-600 hover:text-accent-700">View all</Link>
+    </div>
+
+    <!-- Circle style -->
+    <div v-if="categoryDisplayStyle === 'circle'" class="grid grid-cols-2 gap-6 sm:grid-cols-4 lg:grid-cols-8">
+        <Link
+            v-for="category in categories"
+            :key="category.id"
+            :href="`/categories/${category.slug}`"
+            class="group flex flex-col items-center gap-3 text-center"
+        >
+            <span class="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-2 border-transparent bg-ink-50 shadow-card transition-all duration-300 group-hover:border-accent-400 group-hover:shadow-elevated sm:h-24 sm:w-24">
+                <img v-if="category.image" :src="category.image" :alt="category.name" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                <span v-else class="text-2xl font-bold text-ink-400">{{ category.name.charAt(0) }}</span>
+            </span>
+            <span class="text-xs font-medium text-ink-700 transition-colors group-hover:text-accent-700 sm:text-sm">{{ category.name }}</span>
+        </Link>
+    </div>
+
+    <!-- Card style (horizontal, image as background) -->
+    <div v-else-if="categoryDisplayStyle === 'card'" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Link
+            v-for="category in categories"
+            :key="category.id"
+            :href="`/categories/${category.slug}`"
+            class="group relative h-32 overflow-hidden rounded-xl bg-ink-900 shadow-card transition-shadow duration-300 hover:shadow-elevated"
+        >
+            <img
+                v-if="category.image"
+                :src="category.image"
+                :alt="category.name"
+                class="absolute inset-0 h-full w-full object-cover opacity-70 transition-transform duration-500 group-hover:scale-110"
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-ink-900/80 via-ink-900/20 to-transparent" />
+            <span class="absolute bottom-4 left-4 font-display text-lg font-bold text-white">{{ category.name }}</span>
+        </Link>
+    </div>
+
+    <!-- Square tile style -->
+    <div v-else class="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8">
+        <Link
+            v-for="category in categories"
+            :key="category.id"
+            :href="`/categories/${category.slug}`"
+            class="group flex flex-col gap-2"
+        >
+            <span class="relative block aspect-square overflow-hidden rounded-xl bg-ink-50 shadow-card transition-shadow duration-300 group-hover:shadow-elevated">
+                <img v-if="category.image" :src="category.image" :alt="category.name" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                <span v-else class="flex h-full w-full items-center justify-center text-2xl font-bold text-ink-400">{{ category.name.charAt(0) }}</span>
+            </span>
+            <span class="text-center text-xs font-medium text-ink-700 transition-colors group-hover:text-accent-700 sm:text-sm">{{ category.name }}</span>
+        </Link>
+    </div>
+</section>
 
     <!-- Flash deals -->
     <section v-if="flashDeals.length" class="bg-ink-900/[0.02] py-14">

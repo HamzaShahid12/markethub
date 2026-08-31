@@ -6,6 +6,7 @@ use App\Models\Banner;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Vendor;
+use App\Models\Setting;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -32,7 +33,13 @@ class HomeController extends Controller
             ->where('status', 'active')
             ->orderBy('sort_order')
             ->take(8)
-            ->get(['id', 'name', 'slug']);
+            ->get(['id', 'name', 'slug', 'image'])
+            ->map(fn (Category $c) => [
+        'id' => $c->id, 
+        'name' => $c->name,
+        'slug' => $c->slug,
+        'image' => $c->image ? asset('storage/'.$c->image) : null,
+    ]);
 
         $trending = Product::query()
             ->with(['images', 'vendor:id,shop_name'])
@@ -65,6 +72,7 @@ class HomeController extends Controller
             'flashDeals' => $flashDeals,
             'flashDealsEndAt' => $flashDeals->isNotEmpty() ? Carbon::now()->addHours(6)->toIso8601String() : null,
             'vendors' => $vendors,
+            'categoryDisplayStyle' => Setting::get('category_display_style', 'circle'),
         ]);
     }
 
