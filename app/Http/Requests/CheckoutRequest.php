@@ -16,6 +16,7 @@ class CheckoutRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'guest_email' => [$this->user() ? 'nullable' : 'required', 'email', 'max:255'],
             'line1' => ['required', 'string', 'max:255'],
             'city' => ['required', 'string', 'max:120'],
             'state' => ['required', 'string', 'max:120'],
@@ -24,6 +25,7 @@ class CheckoutRequest extends FormRequest
             'phone' => ['required', 'string', 'max:30'],
             'coupon_code' => ['nullable', 'string', 'max:50'],
             'payment_method' => ['required', Rule::in(['card', 'cod', 'paypal'])],
+            'payment_intent_id' => ['required_if:payment_method,card', 'nullable', 'string'],
         ];
     }
 }

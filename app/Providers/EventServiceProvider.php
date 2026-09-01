@@ -10,6 +10,8 @@ use App\Listeners\SendOrderConfirmation;
 use App\Listeners\SendOrderStatusUpdate;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use App\Listeners\MergeGuestCart;
+use Illuminate\Auth\Events\Login;
 
 /**
  * Laravel 12's skeleton no longer ships an EventServiceProvider by
@@ -28,5 +30,6 @@ class EventServiceProvider extends ServiceProvider
         Event::listen(OrderPlaced::class, CheckLowStock::class);
 
         Event::listen(OrderStatusChanged::class, SendOrderStatusUpdate::class);
+        Event::listen(Login::class, MergeGuestCart::class);
     }
 }

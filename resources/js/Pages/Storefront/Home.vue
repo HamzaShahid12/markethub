@@ -25,10 +25,13 @@ const cart = useCartStore();
 const toast = useToast();
 
 async function addToCart(product) {
-    if (!page.props.auth?.user) {
-        window.location.href = '/login';
-        return;
+    try {
+        await cart.addItem(product.id);
+        toast.success(`${product.name} added to your cart`);
+    } catch {
+        toast.error('Could not add that item — please try again.');
     }
+
 
     try {
         await cart.addItem(product.id);

@@ -10,10 +10,10 @@ class Order extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 'coupon_id', 'order_number', 'subtotal', 'discount',
-        'shipping_fee', 'total', 'status', 'payment_status', 'payment_method',
-        'shipping_address', 'billing_address', 'notes',
-    ];
+    'user_id', 'guest_name', 'guest_email', 'coupon_id', 'order_number', 'subtotal', 'discount',
+    'shipping_fee', 'total', 'status', 'payment_status', 'payment_method',
+    'shipping_address', 'billing_address', 'notes',
+];
 
     protected function casts(): array
     {
@@ -50,5 +50,14 @@ class Order extends Model
     public function reviews()
     {
         return $this->hasMany(Review::class);
+    }
+    public function customerName(): string
+    {
+        return $this->user?->name ?? $this->guest_name ?? 'Guest';
+    }
+
+    public function customerEmail(): string
+    {
+        return $this->user?->email ?? $this->guest_email ?? '';
     }
 }

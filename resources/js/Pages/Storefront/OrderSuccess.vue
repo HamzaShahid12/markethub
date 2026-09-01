@@ -1,14 +1,23 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import { CheckCircle2 } from 'lucide-vue-next';
 import StorefrontLayout from '@/Layouts/StorefrontLayout.vue';
 import Button from '@/Components/Common/Button.vue';
 
 defineOptions({ layout: StorefrontLayout });
 
-defineProps({
+const props = defineProps({
     order: { type: Object, required: true },
 });
+
+const form = useForm({
+    password: '',
+    password_confirmation: '',
+});
+
+function claimAccount() {
+    form.post(`/orders/${props.order.order_number}/claim-account`);
+}
 
 function money(value) {
     return `$${Number(value).toFixed(2)}`;
@@ -41,6 +50,20 @@ function money(value) {
                 Paying by {{ order.payment_method === 'cod' ? 'cash on delivery' : order.payment_method }}
                 — {{ order.payment_status }}
             </p>
+
+            <!-- Guest: optional account creation, never forced -->
+            <div v-if="order.is_guest" class="mt-8 rounded-xl border border-accent-200 bg-accent-50 p-5 text-left">
+                <p class="text-sm font-semibold text-ink-900">Want to track this order later?</p>
+                <p class="mt-1 text-xs text-ink-500">
+                    Create a free account with <strong>{{ order.guest_email }}</strong> — completely optional.
+                </p>
+                <form class="mt-3 space-y-2" @submit.prevent="claimAccount">
+                    <input v-model="form.password" type="password" placeholder="Choose a password" required class="w-full rounded-lg border-ink-200 text-sm focus:border-accent-500 focus:ring-accent-500" />
+                    <input v-model="form.password_confirmation" type="password" placeholder="Confirm password" required class="w-full rounded-lg border-ink-200 text-sm focus:border-accent-500 focus:ring-accent-500" />
+                    <p v-if="form.errors.password" class="text-xs text-red-600">{{ form.errors.password }}</p>
+                    <Button type="submit" variant="secondary" size="sm" class="w-full" :loading="form.processing">Create account</Button>
+                </form>
+            </div>
 
             <Link href="/products" class="mt-8 block">
                 <Button variant="primary" class="w-full">Continue shopping</Button>

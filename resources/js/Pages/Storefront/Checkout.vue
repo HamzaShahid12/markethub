@@ -1,7 +1,8 @@
 <script setup>
 import { Head, useForm, usePage } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import axios from 'axios';
+import { loadStripe } from '@stripe/stripe-js';
 import StorefrontLayout from '@/Layouts/StorefrontLayout.vue';
 import Button from '@/Components/Common/Button.vue';
 import { useToast } from '@/Composables/useToast';
@@ -18,6 +19,7 @@ const toast = useToast();
 
 const form = useForm({
     name: page.props.auth?.user?.name ?? '',
+    guest_email: '',
     line1: '',
     city: '',
     state: '',
@@ -26,6 +28,7 @@ const form = useForm({
     phone: page.props.auth?.user?.phone ?? '',
     coupon_code: '',
     payment_method: 'cod',
+    payment_intent_id: '',
 });
 
 const couponState = ref({ applying: false, applied: null, error: null });
@@ -51,12 +54,82 @@ function money(value) {
     return `$${Number(value).toFixed(2)}`;
 }
 
-const shippingFee = subtotalValue => (subtotalValue >= 100 ? 0 : 10);
+const shippingFee = (subtotalValue) => (subtotalValue >= 100 ? 0 : 10);
 const discount = () => couponState.value.applied?.discount ?? 0;
 const total = () => Math.max(0, props.subtotal - discount() + shippingFee(props.subtotal));
 
-function submit() {
-    form.post('/checkout');
+// --- Stripe card element setup ---
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_KEY);
+let stripe = null;
+let elements = null;
+let cardElement = null;
+const cardMounted = ref(false);
+const cardError = ref(null);
+const stripeProcessing = ref(false);
+
+async function mountCardElement() {
+    stripe = await stripePromise;
+    elements = stripe.elements();
+    cardElement = elements.create('card', {
+        style: {
+            base: { fontSize: '14px', color: '#0a0e13', '::placeholder': { color: '#9dacba' } },
+        },
+    });
+    cardElement.mount('#card-element');
+    cardElement.on('change', (event) => {
+        cardError.value = event.error ? event.error.message : null;
+    });
+    cardMounted.value = true;
+}
+
+onMounted(() => {
+    if (form.payment_method === 'card') mountCardElement();
+});
+
+function onPaymentMethodChange() {
+    if (form.payment_method === 'card' && !cardMounted.value) {
+        setTimeout(mountCardElement, 50); // wait for #card-element to render
+    }
+}
+
+async function submit() {
+    if (form.payment_method !== 'card') {
+        form.post('/checkout');
+        return;
+    }
+
+    stripeProcessing.value = true;
+
+    try {
+        // 1. Create a PaymentIntent for the current cart total.
+        const { data: intentData } = await axios.post('/api/payments/create-intent', {
+            coupon_code: couponState.value.applied ? form.coupon_code : null,
+        });
+
+        // 2. Confirm the card payment with Stripe directly (card details
+        //    never touch our server — Stripe.js handles them).
+        const result = await stripe.confirmCardPayment(intentData.client_secret, {
+            payment_method: {
+                card: cardElement,
+                billing_details: { name: form.name },
+            },
+        });
+
+        if (result.error) {
+            toast.error(result.error.message);
+            stripeProcessing.value = false;
+            return;
+        }
+
+        // 3. Payment succeeded — now actually place the order.
+        form.payment_intent_id = result.paymentIntent.id;
+        form.post('/checkout', {
+            onFinish: () => { stripeProcessing.value = false; },
+        });
+    } catch (e) {
+        toast.error('Payment could not be processed. Please try again.');
+        stripeProcessing.value = false;
+    }
 }
 </script>
 
@@ -70,11 +143,21 @@ function submit() {
             <form class="space-y-6" @submit.prevent="submit">
                 <section class="rounded-xl border border-ink-100 bg-white p-6 shadow-card">
                     <h2 class="font-display text-base font-semibold text-ink-900">Shipping address</h2>
+
+                    <div v-if="!page.props.auth?.user" class="mt-4 rounded-lg bg-accent-50 p-3 text-xs text-accent-800">
+                        Checking out as guest — no account needed.
+                    </div>
+
                     <div class="mt-4 grid gap-4 sm:grid-cols-2">
                         <div class="sm:col-span-2">
                             <label class="block text-sm font-medium text-ink-700">Full name</label>
                             <input v-model="form.name" type="text" required class="mt-1 w-full rounded-lg border-ink-200 text-sm focus:border-accent-500 focus:ring-accent-500" />
                             <p v-if="form.errors.name" class="mt-1 text-xs text-red-600">{{ form.errors.name }}</p>
+                        </div>
+                        <div v-if="!page.props.auth?.user" class="sm:col-span-2">
+                            <label class="block text-sm font-medium text-ink-700">Email (for order confirmation)</label>
+                            <input v-model="form.guest_email" type="email" required class="mt-1 w-full rounded-lg border-ink-200 text-sm focus:border-accent-500 focus:ring-accent-500" />
+                            <p v-if="form.errors.guest_email" class="mt-1 text-xs text-red-600">{{ form.errors.guest_email }}</p>
                         </div>
                         <div class="sm:col-span-2">
                             <label class="block text-sm font-medium text-ink-700">Address</label>
@@ -107,14 +190,38 @@ function submit() {
                 <section class="rounded-xl border border-ink-100 bg-white p-6 shadow-card">
                     <h2 class="font-display text-base font-semibold text-ink-900">Payment method</h2>
                     <div class="mt-4 space-y-2">
-                        <label v-for="method in [['card', 'Credit / debit card'], ['paypal', 'PayPal'], ['cod', 'Cash on delivery']]" :key="method[0]" class="flex items-center gap-2 rounded-lg border border-ink-200 p-3 text-sm">
-                            <input v-model="form.payment_method" type="radio" :value="method[0]" class="text-accent-600 focus:ring-accent-500" />
-                            {{ method[1] }}
+                        <label class="flex items-center gap-2 rounded-lg border border-ink-200 p-3 text-sm">
+                            <input v-model="form.payment_method" type="radio" value="card" class="text-accent-600 focus:ring-accent-500" @change="onPaymentMethodChange" />
+                            Credit / debit card
                         </label>
+                        <label class="flex items-center gap-2 rounded-lg border border-ink-200 p-3 text-sm">
+                            <input v-model="form.payment_method" type="radio" value="paypal" class="text-accent-600 focus:ring-accent-500" />
+                            PayPal
+                        </label>
+                        <label class="flex items-center gap-2 rounded-lg border border-ink-200 p-3 text-sm">
+                            <input v-model="form.payment_method" type="radio" value="cod" class="text-accent-600 focus:ring-accent-500" />
+                            Cash on delivery
+                        </label>
+                    </div>
+
+                    <!-- Stripe card element -->
+                    <div v-if="form.payment_method === 'card'" class="mt-4">
+                        <label class="block text-sm font-medium text-ink-700">Card details</label>
+                        <div id="card-element" class="mt-1 rounded-lg border border-ink-200 p-3"></div>
+                        <p v-if="cardError" class="mt-1 text-xs text-red-600">{{ cardError }}</p>
+                        <p class="mt-2 text-xs text-ink-400">
+                            Test card: 4242 4242 4242 4242 · any future date · any 3-digit CVC
+                        </p>
                     </div>
                 </section>
 
-                <Button type="submit" variant="primary" size="lg" class="w-full lg:hidden" :loading="form.processing">
+                <Button
+                    type="submit"
+                    variant="primary"
+                    size="lg"
+                    class="w-full lg:hidden"
+                    :loading="form.processing || stripeProcessing"
+                >
                     Place order — {{ money(total()) }}
                 </Button>
             </form>
@@ -142,7 +249,14 @@ function submit() {
                     <div class="flex justify-between border-t border-ink-100 pt-1.5 font-semibold text-ink-900"><dt>Total</dt><dd>{{ money(total()) }}</dd></div>
                 </dl>
 
-                <Button type="button" variant="primary" size="lg" class="hidden w-full lg:flex" :loading="form.processing" @click="submit">
+                <Button
+                    type="button"
+                    variant="primary"
+                    size="lg"
+                    class="hidden w-full lg:flex"
+                    :loading="form.processing || stripeProcessing"
+                    @click="submit"
+                >
                     Place order
                 </Button>
             </aside>

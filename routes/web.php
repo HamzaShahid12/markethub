@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\CartController as ApiCartController;
 use App\Http\Controllers\Api\CouponController as ApiCouponController;
 use App\Http\Controllers\Api\NotificationController as ApiNotificationController;
 use App\Http\Controllers\Api\WishlistController as ApiWishlistController;
+use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\Customer\ConversationController as CustomerConversationController;
@@ -37,6 +38,7 @@ use App\Http\Controllers\Vendor\ProductController as VendorProductController;
 use App\Http\Controllers\Vendor\SalesController as VendorSalesController;
 use App\Http\Controllers\Vendor\StoreProfileController as VendorStoreProfileController;
 use App\Http\Controllers\WishlistPageController;
+use App\Http\Controllers\GuestOrderClaimController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -63,6 +65,20 @@ Route::get('/products/{product:slug}', [StorefrontProductController::class, 'sho
 Route::get('/categories', [StorefrontCategoryController::class, 'index'])->name('categories.index');
 Route::get('/categories/{category:slug}', [StorefrontCategoryController::class, 'show'])->name('categories.show');
 
+Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
+Route::post('/checkout', [CheckoutController::class, 'store'])->middleware('throttle:10,1')->name('checkout.store');
+Route::get('/orders/{orderNumber}/success', [OrderController::class, 'success'])->name('orders.success');
+Route::post('/orders/{orderNumber}/claim-account', [GuestOrderClaimController::class, 'store'])->name('orders.claim');
+
+Route::middleware('throttle:120,1')->prefix('api')->name('api.')->group(function () {
+    Route::get('/cart', [ApiCartController::class, 'index'])->name('cart.index');
+    Route::post('/cart/items', [ApiCartController::class, 'store'])->name('cart.items.store');
+    Route::put('/cart/items/{item}', [ApiCartController::class, 'update'])->name('cart.items.update');
+    Route::delete('/cart/items/{item}', [ApiCartController::class, 'destroy'])->name('cart.items.destroy');
+    Route::post('/coupons/validate', [ApiCouponController::class, 'validateCoupon'])->middleware('throttle:20,1')->name('coupons.validate');
+    Route::post('/payments/create-intent', [PaymentController::class, 'createIntent'])->middleware('throttle:20,1')->name('payments.create-intent');
+});
 // --- Placeholder below is added in a later phase; kept commented so
 //     the intended route map from section 8 stays visible in one place.
 // Route::get('/vendors/{vendor:slug}', [VendorController::class, 'show'])->name('vendors.show');
@@ -81,11 +97,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', DashboardRedirectController::class)->name('dashboard');
 
     // --- Shopping (Phase 4): cart page, checkout, order confirmation.
-    Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
     Route::get('/wishlist', [WishlistPageController::class, 'index'])->name('wishlist.index');
-    Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
-    Route::post('/checkout', [CheckoutController::class, 'store'])->middleware('throttle:10,1')->name('checkout.store');
-    Route::get('/orders/{orderNumber}/success', [OrderController::class, 'success'])->name('orders.success');
 
     // --- Notifications (Phase 8): shared across all roles — the Vue
     //     page itself picks Customer/Vendor/Admin layout based on role.
@@ -102,11 +114,6 @@ Route::middleware('auth')->group(function () {
     //     get a generous general limit; coupon validation gets a
     //     tighter one since it's the one endpoint that lets an
     //     unauthenticated-feeling loop brute-force guess active codes.
-    Route::middleware('throttle:120,1')->prefix('api')->name('api.')->group(function () {
-        Route::get('/cart', [ApiCartController::class, 'index'])->name('cart.index');
-        Route::post('/cart/items', [ApiCartController::class, 'store'])->name('cart.items.store');
-        Route::put('/cart/items/{item}', [ApiCartController::class, 'update'])->name('cart.items.update');
-        Route::delete('/cart/items/{item}', [ApiCartController::class, 'destroy'])->name('cart.items.destroy');
 
         Route::get('/wishlist', [ApiWishlistController::class, 'index'])->name('wishlist.index');
         Route::post('/wishlist/toggle', [ApiWishlistController::class, 'toggle'])->name('wishlist.toggle');
@@ -117,6 +124,7 @@ Route::middleware('auth')->group(function () {
             ->name('coupons.validate');
 
         Route::get('/notifications/unread-count', [ApiNotificationController::class, 'unreadCount'])->name('notifications.unread-count');
+        
     });
 
     Route::middleware('role:customer')->prefix('customer')->name('customer.')->group(function () {
@@ -202,5 +210,4 @@ Route::middleware('auth')->group(function () {
         Route::get('/settings', [SettingController::class, 'edit'])->name('settings.edit');
         Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
     });
-});
 require __DIR__.'/auth.php';

@@ -7,19 +7,18 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
-/**
- * Only the post-checkout confirmation page is built in this phase.
- * Order history/detail/status-timeline for customers and vendors is
- * Phase 5 (Orders) — kept as a separate, additive controller so this
- * class only grows, never gets rewritten.
- */
 class OrderController extends Controller
 {
+    /**
+     * The order confirmation page. No login required — the order
+     * number itself (a random 10-character token, effectively
+     * unguessable) is what proves this visitor just placed this
+     * order, whether they're logged in, a pure guest, or a guest
+     * whose email happened to match an existing account.
+     */
     public function success(Request $request, string $orderNumber): Response
     {
         $order = Order::where('order_number', $orderNumber)->with('items')->firstOrFail();
-
-        $this->authorize('view', $order);
 
         return Inertia::render('Storefront/OrderSuccess', [
             'order' => [
@@ -28,6 +27,8 @@ class OrderController extends Controller
                 'payment_method' => $order->payment_method,
                 'payment_status' => $order->payment_status,
                 'shipping_address' => $order->shipping_address,
+                'is_guest' => $order->user_id === null,
+                'guest_email' => $order->guest_email,
                 'items' => $order->items->map(fn ($item) => [
                     'product_name' => $item->product_name,
                     'quantity' => $item->quantity,

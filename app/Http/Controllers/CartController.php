@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Cart;
+// use App\Models\Cart;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Support\CartResolver;
 
 /**
  * Renders the /cart page. Actual mutations (add/update/remove) go
@@ -17,10 +18,10 @@ class CartController extends Controller
 {
     public function index(Request $request): Response
     {
-        $cart = Cart::with(['items.product.images', 'items.variant'])->firstWhere('user_id', $request->user()?->id);
+        $cart = CartResolver::current($request);
 
         $items = $cart
-            ? $cart->items->map(fn ($item) => [
+            ? $cart->load(['items.product.images', 'items.variant'])->items->map(fn ($item) => [
                 'id' => $item->id,
                 'product_id' => $item->product_id,
                 'product_variant_id' => $item->product_variant_id,

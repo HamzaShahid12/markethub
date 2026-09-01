@@ -11,32 +11,35 @@ use App\Models\VendorCommission;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Stripe\StripeClient;
 
-/**
- * The transactional checkout flow from spec section 11:
- *
- *   Validate cart -> validate stock -> calculate totals -> validate
- *   coupon -> DB::transaction { create order, create order items,
- *   decrement stock, calculate commissions, clear cart }.
- *
- * Kept as a single Action (per the app/Actions/Orders/ structure in
- * section 7) so both the web checkout controller and, later, an API
- * client can call the exact same order-creation logic.
- */
 class CreateOrder
 {
-    public function execute(User $user, array $shippingAddress, ?string $couponCode, string $paymentMethod): Order
-    {
-        $cart = Cart::with(['items.product', 'items.variant'])->firstWhere('user_id', $user->id);
+    public function execute(
+        Cart $cart,
+        ?User $user,
+        array $shippingAddress,
+        ?string $couponCode,
+        string $paymentMethod,
+        ?string $guestName = null,
+        ?string $guestEmail = null,
+        ?string $paymentIntentId = null,
+    ): Order {
+        $cart->load(['items.product', 'items.variant']);
 
-        if (! $cart || $cart->items->isEmpty()) {
+        if (! $user && $guestEmail) {
+            $existingUser = User::where('email', $guestEmail)->first();
+            if ($existingUser) {
+                $user = $existingUser;
+            }
+        }
+
+        if ($cart->items->isEmpty()) {
             throw new RuntimeException('Your cart is empty.');
         }
 
-        // Validate stock before we ever touch the database in a transaction.
         foreach ($cart->items as $item) {
             $available = $item->variant?->stock ?? $item->product->stock;
-
             if ($item->quantity > $available) {
                 throw new RuntimeException("\"{$item->product->name}\" only has {$available} left in stock.");
             }
@@ -60,9 +63,37 @@ class CreateOrder
         $shippingFee = $subtotal >= 100 ? 0 : 10;
         $total = round($subtotal - $discount + $shippingFee, 2);
 
-        $order = DB::transaction(function () use ($user, $cart, $subtotal, $discount, $shippingFee, $total, $coupon, $shippingAddress, $paymentMethod) {
+        // For card payments, verify the PaymentIntent actually succeeded
+        // server-side before creating the order — never trust the
+        // client's word that a card payment went through.
+        $paymentStatus = 'unpaid';
+
+        if ($paymentMethod === 'card') {
+            if (! $paymentIntentId) {
+                throw new RuntimeException('Payment information is missing.');
+            }
+
+            $stripe = new StripeClient(config('services.stripe.secret'));
+            $intent = $stripe->paymentIntents->retrieve($paymentIntentId);
+
+            if ($intent->status !== 'succeeded') {
+                throw new RuntimeException('Payment was not completed. Please try again.');
+            }
+
+            if ((int) round($total * 100) !== $intent->amount) {
+                throw new RuntimeException('Payment amount does not match your order total.');
+            }
+
+            $paymentStatus = 'paid';
+        } elseif ($paymentMethod !== 'cod') {
+            $paymentStatus = 'paid';
+        }
+
+        $order = DB::transaction(function () use ($user, $cart, $subtotal, $discount, $shippingFee, $total, $coupon, $shippingAddress, $paymentMethod, $guestName, $guestEmail, $paymentStatus, $paymentIntentId) {
             $order = Order::create([
-                'user_id' => $user->id,
+                'user_id' => $user?->id,
+                'guest_name' => $user ? null : $guestName,
+                'guest_email' => $user ? null : $guestEmail,
                 'coupon_id' => $coupon?->id,
                 'order_number' => 'MH-'.strtoupper(Str::random(10)),
                 'subtotal' => $subtotal,
@@ -70,9 +101,10 @@ class CreateOrder
                 'shipping_fee' => $shippingFee,
                 'total' => $total,
                 'status' => 'pending',
-                'payment_status' => $paymentMethod === 'cod' ? 'unpaid' : 'paid',
+                'payment_status' => $paymentStatus,
                 'payment_method' => $paymentMethod,
                 'shipping_address' => $shippingAddress,
+                'notes' => $paymentIntentId ? "Stripe PaymentIntent: {$paymentIntentId}" : null,
             ]);
 
             foreach ($cart->items as $cartItem) {
@@ -91,7 +123,6 @@ class CreateOrder
                     'vendor_id' => $product->vendor_id,
                     'product_id' => $product->id,
                     'product_variant_id' => $variant?->id,
-                    // Historical snapshot — later product edits never alter this order (section 6.3).
                     'product_name' => $product->name,
                     'sku' => $variant?->sku ?? $product->sku,
                     'quantity' => $cartItem->quantity,
@@ -132,9 +163,6 @@ class CreateOrder
             return $order->load('items');
         });
 
-        // Dispatched after the transaction commits, so queued listeners
-        // (confirmation email, vendor alerts, low-stock check) never
-        // fire against an order that could still roll back.
         \App\Events\OrderPlaced::dispatch($order);
 
         return $order;
