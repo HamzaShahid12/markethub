@@ -66,7 +66,7 @@ function search(e) {
             <tbody class="divide-y divide-ink-100">
                 <tr v-for="order in orders.data" :key="order.id" class="hover:bg-ink-50">
                     <td class="px-5 py-3 font-medium text-ink-900">{{ order.order_number }}</td>
-                    <td class="px-5 py-3 text-ink-600">{{ order.user.name }}</td>
+                    <td class="px-5 py-3 text-ink-600">{{ order.customer_name }}</td>
                     <td class="px-5 py-3 text-ink-600">{{ order.items_count }}</td>
                     <td class="px-5 py-3 text-ink-700">${{ Number(order.total).toFixed(2) }}</td>
                     <td class="px-5 py-3"><Badge :tone="statusTone[order.status]" class="capitalize">{{ order.status }}</Badge></td>

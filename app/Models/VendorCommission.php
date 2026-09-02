@@ -38,4 +38,8 @@ class VendorCommission extends Model
     {
         return $this->belongsTo(OrderItem::class);
     }
+    public function payout()
+   {
+        return $this->belongsTo(Payout::class);
+   }
 }

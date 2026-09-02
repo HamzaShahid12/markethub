@@ -11,9 +11,10 @@ class Vendor extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'user_id', 'shop_name', 'slug', 'description', 'logo', 'banner',
-        'phone', 'address', 'status', 'commission_rate', 'approved_at',
-    ];
+    'user_id', 'shop_name', 'slug', 'description', 'logo', 'banner',
+    'phone', 'address', 'status', 'commission_rate', 'approved_at',
+    'payout_method', 'bank_name', 'account_title', 'account_number', 'iban', 'payout_phone',
+];
 
     protected function casts(): array
     {
@@ -52,5 +53,9 @@ class Vendor extends Model
     public function isApproved(): bool
     {
         return $this->status === 'approved';
+    }
+    public function payouts()
+    {
+        return $this->hasMany(Payout::class);
     }
 }

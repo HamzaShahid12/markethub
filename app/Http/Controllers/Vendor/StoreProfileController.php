@@ -13,23 +13,29 @@ use Inertia\Response;
 class StoreProfileController extends Controller
 {
     public function edit(Request $request): Response
-    {
-        $vendor = $request->user()->vendor;
+{
+    $vendor = $request->user()->vendor;
 
-        return Inertia::render('Vendor/StoreProfile/Edit', [
-            'vendor' => [
-                'shop_name' => $vendor->shop_name,
-                'description' => $vendor->description,
-                'phone' => $vendor->phone,
-                'address' => $vendor->address,
-                'logo' => $vendor->logo ? asset('storage/'.$vendor->logo) : null,
-                'banner' => $vendor->banner ? asset('storage/'.$vendor->banner) : null,
-                'status' => $vendor->status,
-                'commission_rate' => $vendor->commission_rate,
-                'rating_average' => $vendor->rating_average,
-            ],
-        ]);
-    }
+    return Inertia::render('Vendor/StoreProfile/Edit', [
+        'vendor' => [
+            'shop_name' => $vendor->shop_name,
+            'description' => $vendor->description,
+            'phone' => $vendor->phone,
+            'address' => $vendor->address,
+            'logo' => $vendor->logo ? asset('storage/'.$vendor->logo) : null,
+            'banner' => $vendor->banner ? asset('storage/'.$vendor->banner) : null,
+            'status' => $vendor->status,
+            'commission_rate' => $vendor->commission_rate,
+            'rating_average' => $vendor->rating_average,
+            'payout_method' => $vendor->payout_method,
+            'bank_name' => $vendor->bank_name,
+            'account_title' => $vendor->account_title,
+            'account_number' => $vendor->account_number,
+            'iban' => $vendor->iban,
+            'payout_phone' => $vendor->payout_phone,
+        ],
+    ]);
+}
 
     public function update(StoreProfileRequest $request): RedirectResponse
     {

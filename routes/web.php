@@ -39,6 +39,8 @@ use App\Http\Controllers\Vendor\SalesController as VendorSalesController;
 use App\Http\Controllers\Vendor\StoreProfileController as VendorStoreProfileController;
 use App\Http\Controllers\WishlistPageController;
 use App\Http\Controllers\GuestOrderClaimController;
+use App\Http\Controllers\Vendor\PayoutController as VendorPayoutController;
+use App\Http\Controllers\Admin\PayoutController as AdminPayoutController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -160,6 +162,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/sales', [VendorSalesController::class, 'index'])->name('sales');
         Route::get('/earnings', [VendorEarningsController::class, 'index'])->name('earnings');
 
+        Route::get('/payouts', [VendorPayoutController::class, 'index'])->name('payouts.index');
+        Route::post('/payouts', [VendorPayoutController::class, 'store'])->name('payouts.store');
+
         Route::get('/messages', [VendorConversationController::class, 'index'])->name('messages.index');
         Route::get('/messages/{conversation}', [VendorConversationController::class, 'show'])->name('messages.show');
         Route::post('/messages/{conversation}', [VendorConversationController::class, 'sendMessage'])->name('messages.send');
@@ -206,6 +211,12 @@ Route::middleware('auth')->group(function () {
         Route::put('/reviews/{review}/status', [AdminReviewController::class, 'updateStatus'])->name('reviews.status');
 
         Route::get('/commissions', [AdminCommissionController::class, 'index'])->name('commissions.index');
+        
+        Route::get('/payouts', [AdminPayoutController::class, 'index'])->name('payouts.index');
+        Route::post('/payouts/{payout}/approve', [AdminPayoutController::class, 'approve'])->name('payouts.approve');
+        Route::post('/payouts/{payout}/reject', [AdminPayoutController::class, 'reject'])->name('payouts.reject');
+        Route::post('/payouts/{payout}/mark-paid', [AdminPayoutController::class, 'markPaid'])->name('payouts.mark-paid');        
+        
         Route::get('/reports', [AdminReportController::class, 'index'])->name('reports.index');
         Route::get('/settings', [SettingController::class, 'edit'])->name('settings.edit');
         Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');

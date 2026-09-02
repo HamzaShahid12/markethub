@@ -3,7 +3,7 @@ import { usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import {
     LayoutDashboard, Users, Store, Package, Layers, ShoppingBag,
-    TicketPercent, Star, Percent, BarChart3, Settings, Image,
+    TicketPercent, Star, Percent, BarChart3, Settings, Image, Wallet,
 } from 'lucide-vue-next';
 import DashboardShell from '@/Components/Layout/DashboardShell.vue';
 
@@ -22,6 +22,7 @@ const navItems = computed(() => [
     { label: 'Coupons', href: '/admin/coupons', icon: TicketPercent, active: currentPath.value === '/admin/coupons' },
     { label: 'Reviews', href: '/admin/reviews', icon: Star, active: currentPath.value === '/admin/reviews' },
     { label: 'Commissions', href: '/admin/commissions', icon: Percent, active: currentPath.value === '/admin/commissions' },
+    { label: 'Payouts', href: '/admin/payouts', icon: Wallet, active: currentPath.value.startsWith('/admin/payouts') },
     { label: 'Reports', href: '/admin/reports', icon: BarChart3, active: currentPath.value === '/admin/reports' },
     { label: 'Settings', href: '/admin/settings', icon: Settings, active: currentPath.value === '/admin/settings' },
 ]);

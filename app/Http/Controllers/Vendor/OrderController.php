@@ -32,7 +32,7 @@ class OrderController extends Controller
             ->through(fn (Order $order) => [
                 'id' => $order->id,
                 'order_number' => $order->order_number,
-                'customer_name' => $order->user->name,
+                'customer_name' => $order->user?->name ?? $order->guest_name ?? 'Guest',
                 'status' => $order->status,
                 'created_at' => $order->created_at->toIso8601String(),
                 'my_items_count' => $order->items->count(),
@@ -56,7 +56,7 @@ class OrderController extends Controller
                 'order_number' => $order->order_number,
                 'status' => $order->status,
                 'created_at' => $order->created_at->toIso8601String(),
-                'customer_name' => $order->user->name,
+                'customer_name' => $order->user?->name ?? $order->guest_name ?? 'Guest',
                 'shipping_address' => $order->shipping_address,
                 'items' => $items->map(fn ($item) => [
                     'id' => $item->id,

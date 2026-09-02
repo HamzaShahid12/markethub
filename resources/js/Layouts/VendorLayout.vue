@@ -16,6 +16,7 @@ const navItems = computed(() => [
     { label: 'Messages', href: '/vendor/messages', icon: MessageCircle, active: currentPath.value.startsWith('/vendor/messages') },
     { label: 'Sales', href: '/vendor/sales', icon: TrendingUp, active: currentPath.value === '/vendor/sales' },
     { label: 'Earnings', href: '/vendor/earnings', icon: Wallet, active: currentPath.value === '/vendor/earnings' },
+    { label: 'Payouts', href: '/vendor/payouts', icon: Wallet, active: currentPath.value === '/vendor/payouts' },
     { label: 'Reviews', href: '/vendor/reviews', icon: Star, active: currentPath.value === '/vendor/reviews' },
     { label: 'Store Profile', href: '/vendor/store-profile', icon: Store, active: currentPath.value === '/vendor/store-profile' },
 ]);

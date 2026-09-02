@@ -20,11 +20,12 @@ const statusTone = { pending: 'warning', payable: 'accent', paid: 'success' };
 <template>
     <Head title="Earnings" />
 
-    <div class="grid gap-4 sm:grid-cols-4">
+    <div class="grid gap-4 sm:grid-cols-5">
         <StatCard label="Pending" :value="`$${totals.pending.toFixed(2)}`" :icon="Clock" />
-        <StatCard label="Payable" :value="`$${totals.payable.toFixed(2)}`" :icon="Wallet" tone="accent" />
-        <StatCard label="Paid out" :value="`$${totals.paid.toFixed(2)}`" :icon="CheckCircle2" />
+        <StatCard label="In payout" :value="`$${totals.in_payout.toFixed(2)}`" :icon="Clock" />
+        <StatCard label="Available" :value="`$${totals.payable.toFixed(2)}`" :icon="Wallet" tone="accent" />
         <StatCard label="Lifetime earnings" :value="`$${totals.lifetime.toFixed(2)}`" :icon="Wallet" />
+        <StatCard label="Paid out" :value="`$${totals.paid.toFixed(2)}`" :icon="CheckCircle2" />
     </div>
 
     <p class="mt-4 text-xs text-ink-500">

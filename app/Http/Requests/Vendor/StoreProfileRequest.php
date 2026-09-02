@@ -18,14 +18,20 @@ class StoreProfileRequest extends FormRequest
     }
 
     public function rules(): array
-    {
-        return [
-            'shop_name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:2000'],
-            'phone' => ['nullable', 'string', 'max:30'],
-            'address' => ['nullable', 'string', 'max:255'],
-            'logo' => ['nullable', 'image', 'max:2048'],
-            'banner' => ['nullable', 'image', 'max:4096'],
-        ];
-    }
+{
+    return [
+        'shop_name' => ['required', 'string', 'max:255'],
+        'description' => ['nullable', 'string', 'max:2000'],
+        'phone' => ['nullable', 'string', 'max:30'],
+        'address' => ['nullable', 'string', 'max:255'],
+        'logo' => ['nullable', 'image', 'max:2048'],
+        'banner' => ['nullable', 'image', 'max:4096'],
+        'payout_method' => ['nullable', 'in:bank_transfer,jazzcash,easypaisa,paypal'],
+        'bank_name' => ['nullable', 'string', 'max:255'],
+        'account_title' => ['nullable', 'string', 'max:255'],
+        'account_number' => ['nullable', 'string', 'max:100'],
+        'iban' => ['nullable', 'string', 'max:100'],
+        'payout_phone' => ['nullable', 'string', 'max:30'],
+    ];
+}
 }

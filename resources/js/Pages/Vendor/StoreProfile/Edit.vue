@@ -22,8 +22,13 @@ const form = useForm({
     address: props.vendor.address ?? '',
     logo: null,
     banner: null,
+    payout_method: props.vendor.payout_method ?? '',
+    bank_name: props.vendor.bank_name ?? '',
+    account_title: props.vendor.account_title ?? '',
+    account_number: props.vendor.account_number ?? '',
+    iban: props.vendor.iban ?? '',
+    payout_phone: props.vendor.payout_phone ?? '',
 });
-
 const logoPreview = ref(props.vendor.logo);
 const bannerPreview = ref(props.vendor.banner);
 
@@ -107,6 +112,59 @@ const statusTone = { pending: 'warning', approved: 'success', suspended: 'danger
                 </div>
             </div>
         </section>
+
+        <section class="rounded-xl border border-ink-100 bg-white p-6 shadow-card">
+    <h2 class="font-display text-base font-semibold text-ink-900">Payout details</h2>
+    <p class="mt-1 text-xs text-ink-500">Where should we send your earnings?</p>
+
+    <div class="mt-4 space-y-4">
+        <div>
+            <label class="block text-sm font-medium text-ink-700">Payout method</label>
+            <select v-model="form.payout_method" class="mt-1 w-full rounded-lg border-ink-200 text-sm focus:border-accent-500 focus:ring-accent-500">
+                <option value="">Select a method</option>
+                <option value="bank_transfer">Bank Transfer</option>
+                <option value="jazzcash">JazzCash</option>
+                <option value="easypaisa">Easypaisa</option>
+                <option value="paypal">PayPal</option>
+            </select>
+        </div>
+
+        <template v-if="form.payout_method === 'bank_transfer'">
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="block text-sm font-medium text-ink-700">Bank name</label>
+                    <input v-model="form.bank_name" type="text" class="mt-1 w-full rounded-lg border-ink-200 text-sm focus:border-accent-500 focus:ring-accent-500" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-ink-700">Account title</label>
+                    <input v-model="form.account_title" type="text" class="mt-1 w-full rounded-lg border-ink-200 text-sm focus:border-accent-500 focus:ring-accent-500" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-ink-700">Account number</label>
+                    <input v-model="form.account_number" type="text" class="mt-1 w-full rounded-lg border-ink-200 text-sm focus:border-accent-500 focus:ring-accent-500" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-ink-700">IBAN <span class="text-ink-400">(optional)</span></label>
+                    <input v-model="form.iban" type="text" class="mt-1 w-full rounded-lg border-ink-200 text-sm focus:border-accent-500 focus:ring-accent-500" />
+                </div>
+            </div>
+        </template>
+
+        <template v-else-if="form.payout_method === 'jazzcash' || form.payout_method === 'easypaisa'">
+            <div>
+                <label class="block text-sm font-medium text-ink-700">{{ form.payout_method === 'jazzcash' ? 'JazzCash' : 'Easypaisa' }} phone number</label>
+                <input v-model="form.payout_phone" type="text" placeholder="03XX-XXXXXXX" class="mt-1 w-full rounded-lg border-ink-200 text-sm focus:border-accent-500 focus:ring-accent-500" />
+            </div>
+        </template>
+
+        <template v-else-if="form.payout_method === 'paypal'">
+            <div>
+                <label class="block text-sm font-medium text-ink-700">PayPal email</label>
+                <input v-model="form.account_title" type="email" class="mt-1 w-full rounded-lg border-ink-200 text-sm focus:border-accent-500 focus:ring-accent-500" />
+            </div>
+        </template>
+    </div>
+</section>
 
         <div class="flex justify-end">
             <Button type="submit" variant="primary" size="lg" :loading="form.processing">Save changes</Button>

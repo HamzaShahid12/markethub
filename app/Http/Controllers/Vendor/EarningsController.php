@@ -38,7 +38,8 @@ class EarningsController extends Controller
             ]),
             'totals' => [
                 'pending' => (float) $vendor->commissions()->where('status', 'pending')->sum('vendor_amount'),
-                'payable' => (float) $vendor->commissions()->where('status', 'payable')->sum('vendor_amount'),
+                'payable' => (float) $vendor->commissions()->where('status', 'payable')->whereNull('payout_id')->sum('vendor_amount'),
+                'in_payout' => (float) $vendor->commissions()->where('status', 'payable')->whereNotNull('payout_id')->sum('vendor_amount'),
                 'paid' => (float) $vendor->commissions()->where('status', 'paid')->sum('vendor_amount'),
                 'lifetime' => (float) $vendor->commissions()->sum('vendor_amount'),
             ],

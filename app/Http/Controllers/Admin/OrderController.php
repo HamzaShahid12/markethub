@@ -13,24 +13,33 @@ use Inertia\Response;
 class OrderController extends Controller
 {
     public function index(Request $request): Response
-    {
-        $orders = Order::query()
-            ->with('user:id,name')
-            ->withCount('items')
-            ->when($request->string('status')->toString(), fn ($q, $status) => $status !== 'all' ? $q->where('status', $status) : $q)
-            ->when($request->string('search')->toString(), fn ($q, $search) => $q->where('order_number', 'like', "%{$search}%"))
-            ->latest()
-            ->paginate(15)
-            ->withQueryString();
-
-        return Inertia::render('Admin/Orders/Index', [
-            'orders' => $orders,
-            'filters' => [
-                'status' => $request->string('status')->toString() ?: 'all',
-                'search' => $request->string('search')->toString(),
-            ],
+{
+    $orders = Order::query()
+        ->with('user:id,name')
+        ->withCount('items')
+        ->when($request->string('status')->toString(), fn ($q, $status) => $status !== 'all' ? $q->where('status', $status) : $q)
+        ->when($request->string('search')->toString(), fn ($q, $search) => $q->where('order_number', 'like', "%{$search}%"))
+        ->latest()
+        ->paginate(15)
+        ->withQueryString()
+        ->through(fn (Order $order) => [
+            'id' => $order->id,
+            'order_number' => $order->order_number,
+            'customer_name' => $order->user?->name ?? $order->guest_name ?? 'Guest',
+            'items_count' => $order->items_count,
+            'total' => $order->total,
+            'status' => $order->status,
+            'created_at' => $order->created_at->toIso8601String(),
         ]);
-    }
+
+    return Inertia::render('Admin/Orders/Index', [
+        'orders' => $orders,
+        'filters' => [
+            'status' => $request->string('status')->toString() ?: 'all',
+            'search' => $request->string('search')->toString(),
+        ],
+    ]);
+}
 
     public function show(Order $order): Response
     {
@@ -43,7 +52,10 @@ class OrderController extends Controller
                 'status' => $order->status,
                 'payment_status' => $order->payment_status,
                 'payment_method' => $order->payment_method,
-                'customer' => $order->user,
+                'customer' => [
+                'name' => $order->user?->name ?? $order->guest_name ?? 'Guest',
+                'email' => $order->user?->email ?? $order->guest_email ?? '—',
+],
                 'coupon_code' => $order->coupon?->code,
                 'subtotal' => $order->subtotal,
                 'discount' => $order->discount,
