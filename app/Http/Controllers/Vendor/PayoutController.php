@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Payout;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -22,6 +23,8 @@ class PayoutController extends Controller
             ->whereNull('payout_id')
             ->sum('vendor_amount');
 
+        $hasActivePayout = $vendor->payouts()->whereIn('status', ['requested', 'approved'])->exists();
+
         $payouts = $vendor->payouts()->latest()->paginate(10)->through(fn (Payout $p) => [
             'id' => $p->id,
             'amount' => $p->amount,
@@ -34,7 +37,8 @@ class PayoutController extends Controller
         return Inertia::render('Vendor/Payouts/Index', [
             'payableBalance' => $payableBalance,
             'minimumPayout' => self::MINIMUM_PAYOUT,
-            'canRequest' => $payableBalance >= self::MINIMUM_PAYOUT,
+            'canRequest' => $payableBalance >= self::MINIMUM_PAYOUT && ! $hasActivePayout,
+            'hasActivePayout' => $hasActivePayout,
             'payouts' => $payouts,
             'hasPayoutDetails' => (bool) $vendor->payout_method,
         ]);
@@ -48,20 +52,41 @@ class PayoutController extends Controller
             return back()->with('error', 'Add your payout details in Store Profile first.');
         }
 
-        $commissions = $vendor->commissions()->where('status', 'payable')->whereNull('payout_id')->get();
-        $amount = (float) $commissions->sum('vendor_amount');
-
-        if ($amount < self::MINIMUM_PAYOUT) {
-            return back()->with('error', 'Minimum payout amount is $'.self::MINIMUM_PAYOUT.'.');
+        // Never allow a second payout while one is already in flight —
+        // this is what let the same commissions get claimed twice.
+        if ($vendor->payouts()->whereIn('status', ['requested', 'approved'])->exists()) {
+            return back()->with('error', 'You already have a payout in progress.');
         }
 
-        $payout = Payout::create([
-            'vendor_id' => $vendor->id,
-            'amount' => $amount,
-            'status' => 'requested',
-        ]);
+        $payout = DB::transaction(function () use ($vendor) {
+            // Lock the rows so a double-submit (two tabs, fast double-click)
+            // can't select the same commissions into two different payouts.
+            $commissions = $vendor->commissions()
+                ->where('status', 'payable')
+                ->whereNull('payout_id')
+                ->lockForUpdate()
+                ->get();
 
-        $commissions->each->update(['payout_id' => $payout->id]);
+            $amount = (float) $commissions->sum('vendor_amount');
+
+            if ($amount < self::MINIMUM_PAYOUT) {
+                return null;
+            }
+
+            $payout = Payout::create([
+                'vendor_id' => $vendor->id,
+                'amount' => $amount,
+                'status' => 'requested',
+            ]);
+
+            $commissions->each->update(['payout_id' => $payout->id]);
+
+            return $payout;
+        });
+
+        if (! $payout) {
+            return back()->with('error', 'Minimum payout amount is $'.self::MINIMUM_PAYOUT.'.');
+        }
 
         return back()->with('success', 'Payout requested — the admin will review it shortly.');
     }

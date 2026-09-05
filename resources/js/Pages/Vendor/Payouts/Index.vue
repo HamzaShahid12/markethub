@@ -47,6 +47,9 @@ function requestPayout() {
             <Button variant="primary" :disabled="!canRequest || !hasPayoutDetails" @click="requestPayout">
                 Request Payout
             </Button>
+            <p v-if="hasActivePayout" class="mt-2 text-xs text-ink-400">
+    You already have a payout request in progress.
+</p>
         </div>
     </div>
     <p v-if="!canRequest" class="mt-2 text-xs text-ink-400">

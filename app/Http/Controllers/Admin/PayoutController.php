@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Payout;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -36,6 +37,10 @@ class PayoutController extends Controller
 
     public function approve(Payout $payout): RedirectResponse
     {
+        if ($payout->status !== 'requested') {
+            return back()->with('error', 'Only a requested payout can be approved.');
+        }
+
         $payout->update(['status' => 'approved']);
 
         return back()->with('success', 'Payout approved.');
@@ -43,25 +48,41 @@ class PayoutController extends Controller
 
     public function reject(Request $request, Payout $payout): RedirectResponse
     {
+        if (in_array($payout->status, ['paid', 'rejected'], true)) {
+            return back()->with('error', 'This payout has already been finalized.');
+        }
+
         $data = $request->validate(['admin_note' => ['nullable', 'string', 'max:500']]);
 
-        $payout->update(['status' => 'rejected', 'admin_note' => $data['admin_note'] ?? null]);
-        $payout->commissions()->update(['payout_id' => null]);
+        DB::transaction(function () use ($payout, $data) {
+            $payout->update(['status' => 'rejected', 'admin_note' => $data['admin_note'] ?? null]);
 
-        return back()->with('success', 'Payout rejected — commissions returned to the vendor\'s balance.');
+            // Only release commissions still awaiting payout — never touch
+            // one that's already been marked paid by ANY payout, which
+            // would otherwise let the same money become "available" again.
+            $payout->commissions()->where('status', 'payable')->update(['payout_id' => null]);
+        });
+
+        return back()->with('success', 'Payout rejected — unpaid commissions returned to the vendor\'s balance.');
     }
 
     public function markPaid(Request $request, Payout $payout): RedirectResponse
     {
+        if ($payout->status !== 'approved') {
+            return back()->with('error', 'Only an approved payout can be marked as paid.');
+        }
+
         $data = $request->validate(['reference_number' => ['required', 'string', 'max:255']]);
 
-        $payout->update([
-            'status' => 'paid',
-            'reference_number' => $data['reference_number'],
-            'processed_at' => now(),
-        ]);
+        DB::transaction(function () use ($payout, $data) {
+            $payout->update([
+                'status' => 'paid',
+                'reference_number' => $data['reference_number'],
+                'processed_at' => now(),
+            ]);
 
-        $payout->commissions()->update(['status' => 'paid']);
+            $payout->commissions()->update(['status' => 'paid']);
+        });
 
         return back()->with('success', 'Payout marked as paid.');
     }
