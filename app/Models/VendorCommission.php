@@ -10,9 +10,9 @@ class VendorCommission extends Model
     use HasFactory;
 
     protected $fillable = [
-        'vendor_id', 'order_id', 'order_item_id', 'order_amount',
-        'commission_rate', 'commission_amount', 'vendor_amount', 'status',
-    ];
+    'vendor_id', 'order_id', 'order_item_id', 'order_amount',
+    'commission_rate', 'commission_amount', 'vendor_amount', 'status', 'payout_id',
+];
 
     protected function casts(): array
     {
